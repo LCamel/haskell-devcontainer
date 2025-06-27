@@ -7,7 +7,9 @@ echo '[ -f "$HOME/.ghcup/env" ] && . "$HOME/.ghcup/env" # ghcup-env' >> ~/.zshrc
 
 . $HOME/.ghcup/env
 
-time ghcup install ghc 9.12.2; ghcup set ghc 9.12.2
+# https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/23/25.yaml
+
+time ghcup install ghc 9.8.4; ghcup set ghc 9.8.4
 ghc --version
 
 time ghcup install hls 2.10.0.0; ghcup set hls 2.10.0.0
