@@ -5,7 +5,7 @@ RUN --mount=type=bind,source=install-os-packages.sh,target=/tmp/install-os-packa
 
 USER vscode
 
-RUN --mount=type=bind,source=install-ghcup-and-stack.sh,target=/tmp/install-ghcup-and-stack.sh \
-    bash -x /tmp/install-ghcup-and-stack.sh
+RUN --mount=type=bind,source=install-haskell.sh,target=/tmp/install-haskell.sh \
+    bash -x /tmp/install-haskell.sh
 
 CMD ["bash"]
