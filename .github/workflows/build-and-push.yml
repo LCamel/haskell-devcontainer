@@ -2,13 +2,16 @@
 #
 name: Build and Push
 
-# Configures this workflow to run every time a change is pushed to the branch called `release`.
 on:
-  #push:
-  #  branches: ['main']
+  push:
+    branches: ['main']
   workflow_dispatch:
 
-# Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
+# Prevent concurrent runs for the same ref to avoid race conditions
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: lcamel/haskell-devcontainer
@@ -43,7 +46,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
 
   merge:
     needs: build
@@ -59,7 +62,16 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Create and push multi-arch manifest
         run: |
-          docker buildx imagetools create -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-amd64 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-arm64
+          # Only update 'latest' tag when triggered by a git tag (release)
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            docker buildx imagetools create \
+              -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+              -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} \
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-amd64 \
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-arm64
+          else
+            docker buildx imagetools create \
+              -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} \
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-amd64 \
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-arm64
+          fi
