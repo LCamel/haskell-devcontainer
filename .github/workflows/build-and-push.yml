@@ -25,8 +25,10 @@ jobs:
         include:
           - platform: linux/amd64
             runner: ubuntu-24.04
+            arch: amd64
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
+            arch: arm64
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
@@ -39,15 +41,23 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - id: build
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           platforms: ${{ matrix.platform }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          echo "${{ steps.build.outputs.digest }}" > /tmp/digests/${{ matrix.arch }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.arch }}
+          path: /tmp/digests/${{ matrix.arch }}
 
   merge:
     needs: build
@@ -56,6 +66,11 @@ jobs:
       contents: read
       packages: write
     steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digest-*
+          merge-multiple: true
       - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -63,24 +78,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Create and push multi-arch manifest
         run: |
-          # Only update 'latest' tag when triggered by a git tag (release)
+          AMD64_DIGEST=$(cat /tmp/digests/amd64)
+          ARM64_DIGEST=$(cat /tmp/digests/arm64)
+
+          TAGS="-t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}"
           if [ "${{ github.ref_type }}" = "tag" ]; then
-            docker buildx imagetools create \
-              -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-              -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} \
-              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-amd64 \
-              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-arm64
-          else
-            docker buildx imagetools create \
-              -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} \
-              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-amd64 \
-              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-arm64
+            TAGS="$TAGS -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
           fi
-#      - name: Delete old untagged container versions
-#        uses: actions/delete-package-versions@v5
-#        with:
-#          package-name: ${{ env.PACKAGE_NAME }}
-#          package-type: 'container'
-#          min-versions-to-keep: 8
-#          delete-only-untagged-versions: 'true'
-#          token: ${{ secrets.GITHUB_TOKEN }}
+
+          docker buildx imagetools create $TAGS \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${AMD64_DIGEST} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${ARM64_DIGEST}
