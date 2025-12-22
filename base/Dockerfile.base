@@ -1,0 +1,11 @@
+FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
+
+# Add metadata labels
+LABEL org.opencontainers.image.title="Haskell DevContainer Base"
+LABEL org.opencontainers.image.description="Base image with OS dependencies for Haskell development"
+LABEL org.opencontainers.image.source="https://github.com/lcamel/haskell-devcontainer"
+LABEL org.opencontainers.image.licenses="MIT"
+
+# Install OS packages required for Haskell development
+RUN --mount=type=bind,source=install-os-packages.sh,target=/tmp/install-os-packages.sh \
+    bash -x /tmp/install-os-packages.sh
