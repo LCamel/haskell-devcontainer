@@ -5,6 +5,7 @@ name: Build and Push
 on:
   push:
     branches: ['main']
+    tags: ['*']
   workflow_dispatch:
 
 # Prevent concurrent runs for the same ref to avoid race conditions
@@ -47,8 +48,8 @@ jobs:
           context: .
           push: true
           platforms: ${{ matrix.platform }}
-          cache-from: type=gha,scope=${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+          pull: true
+          no-cache: true
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true
       - name: Export digest
         run: |
@@ -81,11 +82,17 @@ jobs:
           AMD64_DIGEST=$(cat /tmp/digests/amd64)
           ARM64_DIGEST=$(cat /tmp/digests/arm64)
 
-          TAGS="-t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}"
+          NOW=$(date +'%Y%m%d-%H%M')
+
           if [ "${{ github.ref_type }}" = "tag" ]; then
-            TAGS="$TAGS -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+            IMG_TAG="${{ github.ref_name }}-${NOW}-PRE"
+          else
+            IMG_TAG=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9._-]/-/g')
           fi
 
-          docker buildx imagetools create $TAGS \
+          echo "Final Image Tag: ${IMG_TAG}"
+
+          docker buildx imagetools create \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMG_TAG} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${AMD64_DIGEST} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${ARM64_DIGEST}
