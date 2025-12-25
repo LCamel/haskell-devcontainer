@@ -133,6 +133,7 @@ jobs:
             --platform ${{ matrix.platform }} \
             -v ${{ github.workspace }}/smoke-test.sh:/tmp/smoke-test.sh \
             -v ${{ github.workspace }}/haskell-versions.env:/tmp/haskell-versions.env \
+            -w /tmp \
             "${FULL_IMAGE_NAME}" \
             bash /tmp/smoke-test.sh
 
