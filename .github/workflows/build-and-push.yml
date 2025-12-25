@@ -135,7 +135,7 @@ jobs:
             -v ${{ github.workspace }}/haskell-versions.env:/tmp/haskell-versions.env \
             -w /tmp \
             "${FULL_IMAGE_NAME}" \
-            bash --login /tmp/smoke-test.sh
+            bash -li /tmp/smoke-test.sh
 
   promote:
     needs: [merge, test]
