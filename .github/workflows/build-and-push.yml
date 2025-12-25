@@ -82,9 +82,8 @@ jobs:
           AMD64_DIGEST=$(cat /tmp/digests/amd64)
           ARM64_DIGEST=$(cat /tmp/digests/arm64)
 
-          NOW=$(date +'%Y%m%d-%H%M')
-
           if [ "${{ github.ref_type }}" = "tag" ]; then
+            NOW=$(date +'%Y%m%d-%H%M')
             IMG_TAG="${{ github.ref_name }}-${NOW}-PRE"
           else
             IMG_TAG=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9._-]/-/g')
