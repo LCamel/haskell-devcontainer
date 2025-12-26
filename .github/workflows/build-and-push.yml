@@ -166,7 +166,28 @@ jobs:
           echo "Successfully promoted to ${IMAGE_TAG}"
       - name: Delete temporary __TEMP tag
         run: |
-          curl -sL "https://github.com/google/go-containerregistry/releases/latest/download/go-containerregistry_Linux_x86_64.tar.gz" | tar -xz crane
           IMAGE_TAG_TEMP="${{ needs.merge.outputs.image_tag_temp }}"
           echo "Deleting temporary tag ${IMAGE_TAG_TEMP}..."
-          ./crane delete ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG_TEMP} || echo "Warning: Failed to delete temp tag"
+
+          # Get package version ID for the temp tag
+          OWNER=$(echo "${{ env.IMAGE_NAME }}" | cut -d'/' -f1)
+          PACKAGE=$(echo "${{ env.IMAGE_NAME }}" | cut -d'/' -f2)
+
+          VERSION_ID=$(curl -sL \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/users/${OWNER}/packages/container/${PACKAGE}/versions" \
+            | jq -r ".[] | select(.metadata.container.tags[] == \"${IMAGE_TAG_TEMP}\") | .id")
+
+          if [ -n "$VERSION_ID" ]; then
+            echo "Found version ID: ${VERSION_ID}, deleting..."
+            curl -X DELETE \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/users/${OWNER}/packages/container/${PACKAGE}/versions/${VERSION_ID}" \
+            && echo "Successfully deleted temp tag" || echo "Warning: Failed to delete temp tag"
+          else
+            echo "Warning: Could not find version ID for temp tag"
+          fi
