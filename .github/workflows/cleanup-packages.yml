@@ -1,0 +1,21 @@
+name: Cleanup Temp Package
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '4 5 * * 0'  # Run every Sunday at 05:04 UTC
+
+jobs:
+  delete-temp-versions:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Delete old temp package versions
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: 'haskell-devcontainer-temp'
+          package-type: 'container'
+          min-versions-to-keep: 0
+          delete-only-untagged-versions: 'false'  # Delete all versions (tagged or not)
+          created-before-hours: 168  # Keep versions from last 7 days
