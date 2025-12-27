@@ -138,6 +138,7 @@ jobs:
 
   promote:
     needs: [merge, test]
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:
       packages: write
