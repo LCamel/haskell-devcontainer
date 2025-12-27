@@ -16,7 +16,7 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: lcamel/haskell-devcontainer
-  PACKAGE_NAME: haskell-devcontainer
+  IMAGE_NAME_TEMP: lcamel/haskell-devcontainer-temp
 
 # Build on native runners for each platform, then merge manifests
 jobs:
@@ -50,7 +50,7 @@ jobs:
           platforms: ${{ matrix.platform }}
           pull: true
           no-cache: true
-          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }},push-by-digest=true,name-canonical=true
       - name: Export digest
         run: |
           mkdir -p /tmp/digests
@@ -65,7 +65,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.push_manifest.outputs.image_tag }}
-      image_tag_temp: ${{ steps.push_manifest.outputs.image_tag_temp }}
     permissions:
       contents: read
       packages: write
@@ -80,7 +79,7 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Create and push multi-arch manifest
+      - name: Create and push multi-arch manifest to temp package
         id: push_manifest
         run: |
           AMD64_DIGEST=$(cat /tmp/digests/amd64)
@@ -92,17 +91,13 @@ jobs:
             IMAGE_TAG=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9._-]/-/g')
           fi
 
-          IMAGE_TAG_TEMP="${IMAGE_TAG}__TEMP"
-
           echo "Image Tag: ${IMAGE_TAG}"
-          echo "Temp Image Tag: ${IMAGE_TAG_TEMP}"
           echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
-          echo "image_tag_temp=${IMAGE_TAG_TEMP}" >> "$GITHUB_OUTPUT"
 
           docker buildx imagetools create \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG_TEMP} \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${AMD64_DIGEST} \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${ARM64_DIGEST}
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}:${IMAGE_TAG} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}@${AMD64_DIGEST} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}@${ARM64_DIGEST}
 
   test:
     needs: merge
@@ -127,7 +122,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Run smoke test
         run: |
-          FULL_IMAGE_NAME="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.merge.outputs.image_tag_temp }}"
+          FULL_IMAGE_NAME="${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}:${{ needs.merge.outputs.image_tag }}"
 
           echo "Testing ${FULL_IMAGE_NAME} on ${{ matrix.platform }}..."
 
@@ -152,42 +147,17 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Promote image (remove __TEMP suffix)
+      - name: Promote image from temp package to production
         run: |
           IMAGE_TAG="${{ needs.merge.outputs.image_tag }}"
-          IMAGE_TAG_TEMP="${{ needs.merge.outputs.image_tag_temp }}"
 
-          echo "Promoting ${IMAGE_TAG_TEMP} to ${IMAGE_TAG}..."
+          echo "Promoting from temp package to production..."
+          echo "Source: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}:${IMAGE_TAG}"
+          echo "Target: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
 
           docker buildx imagetools create \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG} \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG_TEMP}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}:${IMAGE_TAG}
 
           echo "Successfully promoted to ${IMAGE_TAG}"
-      - name: Delete temporary __TEMP tag
-        run: |
-          IMAGE_TAG_TEMP="${{ needs.merge.outputs.image_tag_temp }}"
-          echo "Deleting temporary tag ${IMAGE_TAG_TEMP}..."
-
-          # Get package version ID for the temp tag
-          OWNER=$(echo "${{ env.IMAGE_NAME }}" | cut -d'/' -f1)
-          PACKAGE=$(echo "${{ env.IMAGE_NAME }}" | cut -d'/' -f2)
-
-          VERSION_ID=$(curl -sL \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/users/${OWNER}/packages/container/${PACKAGE}/versions" \
-            | jq -r ".[] | select(.metadata.container.tags[] == \"${IMAGE_TAG_TEMP}\") | .id")
-
-          if [ -n "$VERSION_ID" ]; then
-            echo "Found version ID: ${VERSION_ID}, deleting..."
-            curl -X DELETE \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "https://api.github.com/users/${OWNER}/packages/container/${PACKAGE}/versions/${VERSION_ID}" \
-            && echo "Successfully deleted temp tag" || echo "Warning: Failed to delete temp tag"
-          else
-            echo "Warning: Could not find version ID for temp tag"
-          fi
+          echo "Note: Temp package versions will be cleaned up by scheduled cleanup workflow"
