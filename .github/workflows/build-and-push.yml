@@ -18,8 +18,8 @@ env:
   IMAGE_NAME: lcamel/haskell-devcontainer
   IMAGE_NAME_TEMP: lcamel/haskell-devcontainer-temp
 
-# Build on native runners for each platform, then merge manifests
 jobs:
+  # Build and push images for each architecture
   build:
     strategy:
       matrix:
@@ -59,7 +59,7 @@ jobs:
         with:
           name: digest-${{ matrix.arch }}
           path: /tmp/digests/${{ matrix.arch }}
-
+  # Create and push a single multi-architecture image (manifest)
   merge:
     needs: build
     runs-on: ubuntu-latest
@@ -85,12 +85,7 @@ jobs:
           AMD64_DIGEST=$(cat /tmp/digests/amd64)
           ARM64_DIGEST=$(cat /tmp/digests/arm64)
 
-          if [ "${{ github.ref_type }}" = "tag" ]; then
-            IMAGE_TAG="${{ github.ref_name }}"
-          else
-            IMAGE_TAG=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9._-]/-/g')
-          fi
-
+          IMAGE_TAG=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9._-]/-/g')
           echo "Image Tag: ${IMAGE_TAG}"
           echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
 
@@ -98,7 +93,7 @@ jobs:
             -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}:${IMAGE_TAG} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}@${AMD64_DIGEST} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}@${ARM64_DIGEST}
-
+  # Run smoke tests against the multi-arch image
   test:
     needs: merge
     strategy:
@@ -135,7 +130,7 @@ jobs:
             -w /tmp \
             "${FULL_IMAGE_NAME}" \
             bash -li /tmp/smoke-test.sh
-
+  # Promote the image from temp package to production package upon successful tests
   promote:
     needs: [merge, test]
     if: github.ref_type == 'tag'
