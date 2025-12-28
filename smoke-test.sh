@@ -20,13 +20,25 @@ if ! echo "$GHC_VERSION_OUTPUT" | grep -qE "\<${GHC_VERSION}\>"; then
 fi
 echo "GHC version verified."
 
+echo "Checking ~/stackage-version file..."
+STACKAGE_VERSION_FILE="$HOME/stackage-version"
+if [ ! -f "$STACKAGE_VERSION_FILE" ]; then
+    echo "Error: $STACKAGE_VERSION_FILE not found."
+    exit 1
+fi
+STACKAGE_VERSION_CONTENT=$(cat "$STACKAGE_VERSION_FILE")
+if [ "$STACKAGE_VERSION_CONTENT" != "$STACKAGE_VERSION" ]; then
+    echo "Error: stackage-version file content mismatch. Expected '$STACKAGE_VERSION', got: '$STACKAGE_VERSION_CONTENT'"
+    exit 1
+fi
+echo "stackage-version file verified: $STACKAGE_VERSION_CONTENT"
 
 TEST_DIR="/tmp/test1"
 echo "Setting up test directory: $TEST_DIR"
 mkdir -p "$TEST_DIR"
 cd "$TEST_DIR"
 echo "Creating new stack project..."
-stack new foo --bare --resolver "${STACKAGE_VERSION}"
+stack new foo --bare --resolver "$(cat ~/stackage-version)"
 echo "Installing project..."
 stack install
 echo "Running foo-exe..."

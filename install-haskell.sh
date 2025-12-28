@@ -30,3 +30,6 @@ stack config set install-ghc --global false
 # newest cabal is fine (stack uses its own cabal internally anyway)
 time ghcup install cabal $CABAL_VERSION
 cabal --version
+
+# for later retrieval in the container
+echo "$STACKAGE_VERSION" > ~/stackage-version
