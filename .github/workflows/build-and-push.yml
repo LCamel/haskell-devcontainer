@@ -19,8 +19,18 @@ env:
   IMAGE_NAME_TEMP: lcamel/haskell-devcontainer-temp
 
 jobs:
+  # Validate ref name before starting any builds
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4  # Need script from repo
+
+      - name: Validate ref name
+        run: ./validate-ref.sh "${{ github.ref_name }}" "${{ github.ref_type }}"
+
   # Build and push images for each architecture
   build:
+    needs: validate
     strategy:
       matrix:
         include:
@@ -63,8 +73,6 @@ jobs:
   merge:
     needs: build
     runs-on: ubuntu-latest
-    outputs:
-      image_tag: ${{ steps.push_manifest.outputs.image_tag }}
     permissions:
       contents: read
       packages: write
@@ -80,14 +88,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Create and push multi-arch manifest to temp package
-        id: push_manifest
         run: |
           AMD64_DIGEST=$(cat /tmp/digests/amd64)
           ARM64_DIGEST=$(cat /tmp/digests/arm64)
 
-          IMAGE_TAG=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9._-]/-/g')
+          IMAGE_TAG="${{ github.ref_name }}"
           echo "Image Tag: ${IMAGE_TAG}"
-          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
 
           docker buildx imagetools create \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}:${IMAGE_TAG} \
@@ -117,7 +123,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Run smoke test
         run: |
-          FULL_IMAGE_NAME="${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}:${{ needs.merge.outputs.image_tag }}"
+          FULL_IMAGE_NAME="${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}:${{ github.ref_name }}"
 
           echo "Testing ${FULL_IMAGE_NAME} on ${{ matrix.platform }}..."
 
@@ -130,7 +136,7 @@ jobs:
             -w /tmp \
             "${FULL_IMAGE_NAME}" \
             bash -li /tmp/smoke-test.sh
-  # Promote the image from temp package to production package upon successful tests
+  # Promote the image to production upon successful tests (tags only; branch builds remain in temp)
   promote:
     needs: [merge, test]
     if: github.ref_type == 'tag'
@@ -145,7 +151,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Promote image from temp package to production
         run: |
-          IMAGE_TAG="${{ needs.merge.outputs.image_tag }}"
+          IMAGE_TAG="${{ github.ref_name }}"
 
           echo "Promoting from temp package to production..."
           echo "Source: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}:${IMAGE_TAG}"
@@ -157,3 +163,58 @@ jobs:
 
           echo "Successfully promoted to ${IMAGE_TAG}"
           echo "Note: Temp package versions will be cleaned up by scheduled cleanup workflow"
+
+  # Update floating tags (latest, ghc-X.Y, stackage-lts-X)
+  # This runs sequentially to avoid race conditions.
+  tag-floating:
+    needs: promote
+    runs-on: ubuntu-latest
+    # Ensure sequential execution to prevent race conditions.
+    concurrency:
+      group: update-floating-tags-lock
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4 # Need checkout to get the script
+      
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Update Floating Tags
+        run: |
+          TARGET_TAG="${{ github.ref_name }}"
+          
+          echo "Target Tag: $TARGET_TAG"
+          
+          # 1. Fetch all existing tags from Registry
+          echo "Fetching all tags from registry..."
+          REMOTE_TAGS=$(docker run --rm \
+            -v $HOME/.docker:/root/.docker \
+            gcr.io/go-containerregistry/crane:latest \
+            ls ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }})
+            
+          # 2. Calculate which tags need to be updated
+          TAGS_TO_UPDATE=$(echo "$REMOTE_TAGS" | ./calculate-floating-tags.sh "$TARGET_TAG")
+          
+          echo "Tags to update:"
+          echo "$TAGS_TO_UPDATE"
+          
+          # 3. Apply updates
+          if [ -n "$TAGS_TO_UPDATE" ]; then
+            TAG_ARGS=""
+            for tag in $TAGS_TO_UPDATE; do
+                echo "Queueing update for: $tag"
+                TAG_ARGS="$TAG_ARGS -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$tag"
+            done
+            
+            echo "Applying updates..."
+            docker buildx imagetools create $TAG_ARGS \
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TARGET_TAG
+          else
+            echo "No floating tags to update."
+          fi
