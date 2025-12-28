@@ -2,7 +2,8 @@
 cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
 
 # Pull the latest image
-docker pull ghcr.io/lcamel/haskell-devcontainer:latest
+#docker pull ghcr.io/lcamel/haskell-devcontainer:latest
+docker pull ghcr.io/lcamel/haskell-devcontainer-temp:main
 
 TEMP_DIR=$(mktemp -d)
 mkdir -p "$TEMP_DIR/p"

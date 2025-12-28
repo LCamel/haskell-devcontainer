@@ -1,7 +1,8 @@
+// This is for manual testing only, not for development.
+// For the full version, please refer to https://github.com/LCamel/HaskellSpace
 {
-  // This is for manual testing only, not for development.
-  // For the full version, please refer to https://github.com/LCamel/HaskellSpace
-  "image": "ghcr.io/lcamel/haskell-devcontainer:latest",
+  //"image": "ghcr.io/lcamel/haskell-devcontainer:latest",
+  "image": "ghcr.io/lcamel/haskell-devcontainer-temp:main",
   // Stop container when VS Code closes (instead of leaving it running)
   "shutdownAction": "stopContainer",
   "customizations": {
