@@ -1,13 +1,17 @@
 #!/bin/bash
 set -e
 
+# Get script directory and project root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
 # Load versions
-if [ ! -f haskell-versions.env ]; then
+if [ ! -f "$PROJECT_ROOT/haskell-versions.env" ]; then
     echo "Error: haskell-versions.env not found."
     exit 1
 fi
 
-. haskell-versions.env
+. "$PROJECT_ROOT/haskell-versions.env"
 
 # Construct tag with UTC timestamp
 # Format: GHC_VERSION + "__" + STACKAGE_VERSION + "__" + HLS_VERSION + "__" + UTC_TIMESTAMP
