@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4  # Need script from repo
 
       - name: Validate ref name
-        run: ./validate-ref.sh "${{ github.ref_name }}" "${{ github.ref_type }}"
+        run: ./.github/scripts/validate-ref.sh "${{ github.ref_name }}" "${{ github.ref_type }}"
 
   # Build and push images for each architecture
   build:
@@ -131,7 +131,7 @@ jobs:
 
           docker run --rm \
             --platform ${{ matrix.platform }} \
-            -v ${{ github.workspace }}/smoke-test.sh:/tmp/smoke-test.sh \
+            -v ${{ github.workspace }}/.github/scripts/smoke-test.sh:/tmp/smoke-test.sh \
             -v ${{ github.workspace }}/haskell-versions.env:/tmp/haskell-versions.env \
             -w /tmp \
             "${FULL_IMAGE_NAME}" \
@@ -199,7 +199,7 @@ jobs:
             ls ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }})
             
           # 2. Calculate which tags need to be updated
-          TAGS_TO_UPDATE=$(echo "$REMOTE_TAGS" | ./calculate-floating-tags.sh "$TARGET_TAG")
+          TAGS_TO_UPDATE=$(echo "$REMOTE_TAGS" | ./.github/scripts/calculate-floating-tags.sh "$TARGET_TAG")
           
           echo "Tags to update:"
           echo "$TAGS_TO_UPDATE"
