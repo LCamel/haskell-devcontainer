@@ -1,0 +1,14 @@
+{
+  "name": "Haskell Local Build",
+  "build": {
+    "dockerfile": "../../../Dockerfile",
+    "context": "../../.."
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "haskell.haskell"
+      ]
+    }
+  }
+}
