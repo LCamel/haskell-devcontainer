@@ -55,7 +55,7 @@ jobs:
       - id: build
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: docker/
           push: true
           platforms: ${{ matrix.platform }}
           pull: true
@@ -134,7 +134,7 @@ jobs:
           docker run --rm \
             --platform ${{ matrix.platform }} \
             -v ${{ github.workspace }}/.github/scripts/smoke-test.sh:/tmp/smoke-test.sh \
-            -v ${{ github.workspace }}/haskell-versions.env:/tmp/haskell-versions.env \
+            -v ${{ github.workspace }}/docker/haskell-versions.env:/tmp/haskell-versions.env \
             -w /tmp \
             "${FULL_IMAGE_NAME}" \
             bash -li /tmp/smoke-test.sh
