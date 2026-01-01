@@ -15,11 +15,14 @@ echo
 echo "Launching VSCode with clean user data and extensions dirs ..."
 echo
 
+
+
 #echo "Choose 'Reopen in Container' from the Command Palette to open the current folder in the devcontainer."
 #echo
 #code --user-data-dir "$TEMP_DIR/u" --extensions-dir "$TEMP_DIR/e" .
 
+# This part is a bit tricky, as we want to open the current folder directly in the devcontainer.
+# If it does not work, we can always revert to the above commented method.
 echo "Entering the devcontainer directly ..."
 echo
-code --user-data-dir "$TEMP_DIR/u" --extensions-dir "$TEMP_DIR/e" --folder-uri="vscode-remote://dev-container+$(pwd | tr -d '\n' | xxd -c 256 -p)/workspaces/haskell-devcontainer/examples/prebuilt-image" # path from the git root
-
+code --user-data-dir "$TEMP_DIR/u" --extensions-dir "$TEMP_DIR/e" --folder-uri="vscode-remote://dev-container+$(pwd | tr -d '\n' | xxd -c 256 -p)/workspaces/haskell-devcontainer/examples/$(basename "$(pwd)")" # path from the git root
