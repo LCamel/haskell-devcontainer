@@ -1,4 +1,4 @@
-# Local-built image
+# Local-built Image
 
 如果 prebuilt-image 不能滿足你的需求:
 

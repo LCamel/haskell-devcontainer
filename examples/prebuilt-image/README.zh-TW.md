@@ -1,4 +1,4 @@
-# 使用 prebuild image
+# Prebuilt Image
 
 請先安裝 Docker 和 VSCode.
 

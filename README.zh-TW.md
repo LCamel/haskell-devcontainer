@@ -1,17 +1,17 @@
 # haskell-devcontainer
 
-這個 project 提供一個隨開即用的 GHC + Stackage + HLS 的環境.
+這是一個隨開即用的 GHC + Stackage + HLS 的環境.
 
 
 ## 常見的使用方式
 
-### GitHub Codespaces + prebuilt image
+### 簡單: GitHub Codespaces + prebuilt image
 
-適合教學與測試. 有 browser 就能使用.
+適合教學與測試. 有 browser 就能使用. 不需要懂 Docker.
 
 請參考 [HaskellSpace](https://github.com/LCamel/HaskellSpace).
 
-### VSCode + prebuilt image
+### 進階: VSCode + prebuilt image
 
 可作為專案的開發環境基礎. 團隊的新人也可以很快就有和大家一致的開發環境.
 
@@ -19,7 +19,7 @@
 
 請參考 [這裡](./examples/prebuilt-image/).
 
-### VSCode + local-built image
+### 進階: VSCode + local-built image
 
 喜歡自己 build image? 只要 review 幾個簡單的檔案就可以自己 build.
 
