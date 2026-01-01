@@ -1,15 +1,36 @@
-// This is for manual testing only, not for development.
-// For the full version, please refer to https://github.com/LCamel/HaskellSpace
 {
-  //"image": "ghcr.io/lcamel/haskell-devcontainer:latest",
-  "image": "ghcr.io/lcamel/haskell-devcontainer-temp:main",
-  // Stop container when VS Code closes (instead of leaving it running)
+  "image": "ghcr.io/lcamel/haskell-devcontainer:latest",
+
+  // if you want to always pull the latest image
+  "initializeCommand": "docker pull ghcr.io/lcamel/haskell-devcontainer:latest",
+
+  // stop container when VS Code closes (instead of leaving it running)
   "shutdownAction": "stopContainer",
+
   "customizations": {
     "vscode": {
+      // extensions to install in the container
       "extensions": [
         "haskell.haskell"
-      ]
+      ],
+      "settings": {
+        // "haskell.manageHLS" should be set to "PATH".
+        // The following configuration is a workaround for the issue:
+        // https://github.com/haskell/vscode-haskell/issues/1332
+        "haskell.manageHLS": "GHCup",
+        "haskell.toolchain": {
+          "ghc": null,
+          "hls": null,
+          "stack": null,
+          "cabal": null
+        },
+        // disable automatic GHCup upgrade.
+        "haskell.upgradeGHCup": false
+      }
     }
+  },
+  // Some Haskell code requires locale settings to process non-ASCII characters.
+  "containerEnv": {
+    "LC_ALL": "en_US.UTF-8"
   }
 }

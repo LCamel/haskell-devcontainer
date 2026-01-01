@@ -1,4 +1,6 @@
 {
+    // minimal set of extensions for the host VSCode, not for the container
+    // we pre-installed it in the startup script to avoid the prompt
     "recommendations": [
         "ms-vscode-remote.remote-containers"
     ]

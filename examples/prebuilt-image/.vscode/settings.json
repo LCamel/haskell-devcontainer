@@ -1,0 +1,4 @@
+{
+    // to prevent VS Code from asking to open the parent folder when opening a subfolder of a git repo
+    "git.openRepositoryInParentFolders": "always"
+}
