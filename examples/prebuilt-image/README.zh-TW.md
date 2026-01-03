@@ -1,17 +1,21 @@
 # Prebuilt Image
 
-請先安裝 Docker 和 VSCode.
+請先安裝 Docker 和 VS Code.
 
-執行 `clean-start.sh`, 這會開啟一個與目前 VSCode 獨立的全新環境. 目前的選擇是:
+執行 `clean-start.sh`, 這會開啟一個與目前 VS Code 獨立的全新環境. 馬上可以使用.
+
+## Customization
+
+對於想要 customize 環境的使用者, 目前 default 的選擇是:
 - 用全新的 `--user-data-dir` 與 `--extensions-dir`
   - 也可改成沿用現有的環境
 - 直接在此 extensions dir 中安裝 host 所需的 Dev Containers extension
-  - 也可沿用現有 extension 環境中的
+  - 也可改成沿用現有的 extensions
   - 或由 `.vscode/extensions.json` 提示後手動允許安裝
 - 開啟 current directory
   - 也可改成其他目錄
 - 用 `vscode-remote:` 的 URI 直接開啟進入
-  - 也可用一般 path 開啟, 在手動 "reopen in container"
+  - 也可用一般 path 開啟, 再手動 "reopen in container"
   - 或安裝 [`devcontainer` cli](https://github.com/devcontainers/cli) 來開啟
 
 在 `.devcontainer/devcontainer.json` 中:

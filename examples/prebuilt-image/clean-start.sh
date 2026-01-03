@@ -9,9 +9,9 @@ if ! command -v code &> /dev/null; then
     exit 1
 fi
 
-echo "This script helps you start a clean VSCode instance."
+echo "This script helps you start a clean VS Code instance."
 
-echo "Creating temporary VSCode user data and extensions dirs..."
+echo "Creating temporary VS Code user data and extensions dirs..."
 TEMP_DIR=$(mktemp -d)
 echo "Temporary directory created at: $TEMP_DIR"
 echo
@@ -20,7 +20,7 @@ echo "Pre-installing the Dev Containers extension ... (to avoid the prompt)"
 code --user-data-dir "$TEMP_DIR/u" --extensions-dir "$TEMP_DIR/e"  --install-extension ms-vscode-remote.remote-containers
 echo
 
-echo "Launching VSCode with clean user data and extensions dirs ..."
+echo "Launching VS Code with clean user data and extensions dirs ..."
 echo
 
 
@@ -33,14 +33,14 @@ echo
 
 
 # Launch Option 2:
-# In VSCode, run the ">Dev Containers: Install devcontainer CLI" command
+# In VS Code, run the ">Dev Containers: Install devcontainer CLI" command
 # Then use it to open the folder in the devcontainer
 
 
 # Launch Option 3:
 # Directly open the current folder in the devcontainer
 #
-# This script tries to mimic what VSCode does when you choose "Reopen in Container".
+# This script tries to mimic what VS Code does when you choose "Reopen in Container".
 # If your devcontainer.json defines a custom workspaceFolder or workspaceMount,
 # the generated URI will be incorrect, and VS Code will open the wrong path inside the container.
 #
