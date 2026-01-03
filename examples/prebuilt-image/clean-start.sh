@@ -1,7 +1,15 @@
 #!/bin/bash
-cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
+set -e
+cd "$(dirname "${BASH_SOURCE[0]}")"
 
-echo "This script helps you start a clean VSCode instance to test the devcontainer setup."
+# Check if 'code' command exists
+if ! command -v code &> /dev/null; then
+    echo "Error: VS Code CLI 'code' is not installed or not in PATH."
+    echo "Please install VS Code and ensure the 'code' command is available."
+    exit 1
+fi
+
+echo "This script helps you start a clean VSCode instance."
 
 echo "Creating temporary VSCode user data and extensions dirs..."
 TEMP_DIR=$(mktemp -d)
@@ -16,13 +24,32 @@ echo "Launching VSCode with clean user data and extensions dirs ..."
 echo
 
 
-
+# Launch Option 1:
+# Simply open the current folder, then choose "Reopen in Container"
+#
 #echo "Choose 'Reopen in Container' from the Command Palette to open the current folder in the devcontainer."
 #echo
 #code --user-data-dir "$TEMP_DIR/u" --extensions-dir "$TEMP_DIR/e" .
 
-# This part is a bit tricky, as we want to open the current folder directly in the devcontainer.
-# If it does not work, we can always revert to the above commented method.
+
+# Launch Option 2:
+# In VSCode, run the ">Dev Containers: Install devcontainer CLI" command
+# Then use it to open the folder in the devcontainer
+
+
+# Launch Option 3:
+# Directly open the current folder in the devcontainer
+#
+# This script tries to mimic what VSCode does when you choose "Reopen in Container".
+# If your devcontainer.json defines a custom workspaceFolder or workspaceMount,
+# the generated URI will be incorrect, and VS Code will open the wrong path inside the container.
+#
 echo "Entering the devcontainer directly ..."
 echo
-code --user-data-dir "$TEMP_DIR/u" --extensions-dir "$TEMP_DIR/e" --folder-uri="vscode-remote://dev-container+$(pwd | tr -d '\n' | xxd -c 256 -p)/workspaces/haskell-devcontainer/examples/$(basename "$(pwd)")" # path from the git root
+URI=$(./get-devcontainer-uri.sh)
+if [ -z "$URI" ]; then
+    echo "Error: Failed to generate Dev Container URI."
+    exit 1
+fi
+echo "Generated URI: $URI"
+code --user-data-dir "$TEMP_DIR/u" --extensions-dir "$TEMP_DIR/e" --folder-uri="$URI"
