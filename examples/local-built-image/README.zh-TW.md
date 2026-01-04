@@ -7,4 +7,4 @@
 - 修改 [docker/](../../docker/) 目錄的內容.
 - 執行 `clean-start.sh`
 
-如果要 push image, 請參考 [.github/](../../.github/) 中維護 image 的 workflows 與 scripts.
+如果要 push image, 請參考 [.github/README.md](../../.github/README.md) 中維護 image 的 workflows 與 scripts.
