@@ -7,13 +7,21 @@
   // stop container when VS Code closes (instead of leaving it running)
   "shutdownAction": "stopContainer",
 
+  // uncomment if git does not work correctly
+  // "postStartCommand": "git config --global --add safe.directory '*'",
+
   "customizations": {
     "vscode": {
       // extensions to install in the container
       "extensions": [
         "haskell.haskell"
       ],
+      // WARNING: If you change the settings, remember to rebuild the container.
+      //          A mere restart might not take effect!
       "settings": {
+        // to prevent VS Code from asking to open the parent folder when opening a subfolder of a git repo
+        "git.openRepositoryInParentFolders": "always",
+
         // "haskell.manageHLS" should be set to "PATH".
         // The following configuration is a workaround for the issue:
         // https://github.com/haskell/vscode-haskell/issues/1332
