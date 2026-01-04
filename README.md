@@ -17,13 +17,13 @@ Can serve as the foundation for a project development environment. New team memb
 
 Develop and test in an isolated environment without worrying about conflicts between internal and external dependencies. Even if AI makes a mistake, it won't delete your entire hard drive.
 
-Please refer to [here](./examples/prebuilt-image/).
+Please refer to [here](./examples/prebuilt-image/README.en-US.md).
 
 ### Advanced: VS Code + local-built image
 
 Prefer to build your own image? Just review a few simple files and you can build it yourself.
 
-Please refer to [here](./examples/local-built-image/).
+Please refer to [here](./examples/local-built-image/README.en-US.md).
 
 
 ## Supported Platforms
