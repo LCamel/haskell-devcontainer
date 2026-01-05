@@ -24,14 +24,12 @@ fi
 # Example: 9.10.2__lts-24.11__2.11.0.0__20251227-0218
 
 GHC_FULL=$(echo "$TARGET_TAG" | awk -F__ '{print $1}')      # 9.10.2
-GHC_MM=$(echo "$GHC_FULL" | cut -d. -f1-2)                 # 9.10
 
 STACKAGE_FULL=$(echo "$TARGET_TAG" | awk -F__ '{print $2}') # lts-24.11
-STACKAGE_SERIES=$(echo "$STACKAGE_FULL" | cut -d. -f1)      # lts-24
 
 # debug info to stderr
 echo "Debug: Target='$TARGET_TAG'" >&2
-echo "Debug: GHC_MM='$GHC_MM', STACKAGE_SERIES='$STACKAGE_SERIES'" >&2
+echo "Debug: GHC_FULL='$GHC_FULL', STACKAGE_FULL='$STACKAGE_FULL'" >&2
 
 # Helper function to filter and sort tags using the project's logic
 # Format: GHC__STACKAGE__HLS__TIMESTAMP
@@ -72,20 +70,20 @@ if is_latest ".*"; then
     echo "latest"
 fi
 
-# 2. Check GHC floating tag (ghc-X.Y)
-if [ -n "$GHC_MM" ]; then
-    # Regex: Start of line, then GHC_MM, then a dot. e.g. ^9\.10\.
-    PATTERN="^${GHC_MM//./\.}\."
+# 2. Check GHC floating tag (ghc-X.Y.Z)
+if [ -n "$GHC_FULL" ]; then
+    # Regex: Start of line, then GHC_FULL, then __. e.g. ^9\.10\.2__
+    PATTERN="^${GHC_FULL//./\.}__"
     if is_latest "$PATTERN"; then
-        echo "ghc-${GHC_MM}"
+        echo "ghc-${GHC_FULL}"
     fi
 fi
 
-# 3. Check Stackage floating tag (stackage-lts-X)
-if [ -n "$STACKAGE_SERIES" ]; then
-    # Regex: Contains __STACKAGE_SERIES. e.g. __lts-24\.
-    PATTERN="__${STACKAGE_SERIES//./\.}\."
+# 3. Check Stackage floating tag (stackage-lts-X.Y)
+if [ -n "$STACKAGE_FULL" ]; then
+    # Regex: Contains __STACKAGE_FULL__. e.g. __lts-24\.11__
+    PATTERN="__${STACKAGE_FULL//./\.}__"
     if is_latest "$PATTERN"; then
-        echo "stackage-${STACKAGE_SERIES}"
+        echo "stackage-${STACKAGE_FULL}"
     fi
 fi
