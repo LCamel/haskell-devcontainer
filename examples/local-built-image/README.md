@@ -1,6 +1,6 @@
 # Local-built Image
 
-Please read [prebuilt-image's README](../prebuilt-image/README.en-US.md) first.
+Please read [prebuilt-image's README](../prebuilt-image/README.md) first.
 
 If the prebuilt-image does not meet your needs:
 - Read and execute [copy-example.sh](copy-example.sh). This script copies configuration files and scripts from `prebuilt-image/` and changes the image source in `devcontainer.json` to "build".
