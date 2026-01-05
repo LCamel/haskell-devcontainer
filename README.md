@@ -34,8 +34,8 @@ Please refer to [here](./examples/local-built-image/README.en-US.md).
 ## Tags
 
 - `latest`: Latest recommended version
-- `ghc-m.n`: Latest version using a specific GHC, e.g. `ghc-9.10`
-- `stackage-lts-n`: Latest version using a specific Stackage snapshot, e.g. `stackage-lts-24`
+- `ghc-m.n.p`: Latest version using a specific GHC, e.g. `ghc-9.10.2`
+- `stackage-lts-m.n`: Latest version using a specific Stackage snapshot, e.g. `stackage-lts-24.11`
 - `GHC__STACKAGE__HLS__TIMESTAMP`: Fixed version, e.g. `9.10.2__lts-24.11__2.11.0.0__20251229-1435`
 
 For a detailed list, see [here](https://github.com/LCamel/haskell-devcontainer/pkgs/container/haskell-devcontainer).

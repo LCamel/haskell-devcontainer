@@ -166,7 +166,7 @@ jobs:
           echo "Successfully promoted to ${IMAGE_TAG}"
           echo "Note: Temp package versions will be cleaned up by scheduled cleanup workflow"
 
-  # Update floating tags (latest, ghc-X.Y, stackage-lts-X)
+  # Update floating tags (latest, ghc-X.Y.Z, stackage-lts-X.Y)
   # This runs sequentially to avoid race conditions.
   tag-floating:
     needs: promote

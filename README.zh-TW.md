@@ -34,8 +34,8 @@
 ## Tags
 
 - `latest`: 推薦使用的最新版本
-- `ghc-m.n`: 使用特定 GHC 的最新版本, 如 `ghc-9.10`
-- `stackage-lts-n`: 使用特定 Stackage snapshot 的最新版本, 如 `stackage-lts-24`
+- `ghc-m.n.p`: 使用特定 GHC 的最新版本, 如 `ghc-9.10.2`
+- `stackage-lts-m.n`: 使用特定 Stackage snapshot 的最新版本, 如 `stackage-lts-24.11`
 - `GHC__STACKAGE__HLS__TIMESTAMP`: 固定不動的版本, 如 `9.10.2__lts-24.11__2.11.0.0__20251229-1435`
 
 詳細列表請看[這裡](https://github.com/LCamel/haskell-devcontainer/pkgs/container/haskell-devcontainer).

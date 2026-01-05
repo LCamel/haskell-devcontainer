@@ -16,7 +16,7 @@ This directory contains the automation scripts and workflows for the `haskell-de
     - Pushes a temporary image for smoke testing.
     - Runs smoke tests on both architectures.
     - Promotes the image to the main package if it's a tagged release (e.g. `9.10.2__lts-24.11__2.11.0.0__20251229-1435`).
-    - Updates floating tags (e.g., `latest`, `ghc-9.10`, `stackage-lts-24`).
+    - Updates floating tags (e.g., `latest`, `ghc-9.10.2`, `stackage-lts-24.11`).
 - `cleanup-packages.yml`: Scheduled task to clean up old versions of the temporary image.
 
 ## Scripts
