@@ -199,10 +199,13 @@ open_in_devcontainer() {
 
     # Ensure the extension is installed
     if [ "$install_ext" = "true" ]; then
-        echo "Installing Dev Containers extension..." >&2
-        code "${env_args[@]}" --install-extension ms-vscode-remote.remote-containers
+        local install_cmd=(code "${env_args[@]}" --install-extension ms-vscode-remote.remote-containers)
+        echo "Running: ${install_cmd[*]}" >&2
+        "${install_cmd[@]}"
     fi
 
-    echo "Opening Dev Container: $uri" >&2
-    code "${env_args[@]}" --folder-uri="$uri"
+    local final_cmd=(code "${env_args[@]}" --folder-uri="$uri")
+    echo "Opening VS Code..." >&2
+    echo "Command: ${final_cmd[*]}" >&2
+    "${final_cmd[@]}"
 }
