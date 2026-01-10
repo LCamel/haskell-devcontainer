@@ -95,24 +95,44 @@ check_project_dir_contains_devcontainer_settings() {
 # Cleanup existing Dev Containers for a given project path
 # Usage: cleanup_dev_containers [project_dir]
 cleanup_dev_containers() {
-    local project_dir="${1:-$(pwd -P)}"
+    local input_dir="${1:-.}"
     check_docker_command
 
-    echo "Cleaning up existing Dev Containers for: $project_dir" >&2
+    # Resolve paths
+    local phys_path
+    phys_path=$(cd "$input_dir" && pwd -P)
 
-    # VS Code labels containers with 'devcontainer.local_folder'
-    # This matches the folder that was "opened" (the one hex-encoded in the URI)
-    local container_ids
-    container_ids=$(docker ps -aq --filter "label=devcontainer.local_folder=$project_dir")
+    local log_path
+    log_path=$(cd "$input_dir" && pwd -L)
 
-    if [ -n "$container_ids" ]; then
-        echo "Found existing containers, removing: $container_ids" >&2
-        docker rm -f $container_ids > /dev/null
+    echo "Cleaning up existing Dev Containers for:" >&2
+    echo "  Physical: $phys_path" >&2
+    if [ "$phys_path" != "$log_path" ]; then
+        echo "  Logical:  $log_path" >&2
+    fi
+
+    # Find containers for Physical Path
+    local ids_phys
+    ids_phys=$(docker ps -aq --filter "label=devcontainer.local_folder=$phys_path")
+
+    # Find containers for Logical Path (if different)
+    local ids_log=""
+    if [ "$phys_path" != "$log_path" ]; then
+        ids_log=$(docker ps -aq --filter "label=devcontainer.local_folder=$log_path")
+    fi
+
+    # Combine IDs, sort, and remove duplicates
+    local all_ids
+    all_ids=$(printf "%s\n%s" "$ids_phys" "$ids_log" | grep -v '^$' | sort -u)
+
+    if [ -n "$all_ids" ]; then
+        echo "Found existing containers, removing: $all_ids" >&2
+        # Use xargs for safer handling if many IDs, though standard variable expansion usually works for docker rm
+        echo "$all_ids" | xargs docker rm -f > /dev/null
     else
         echo "No existing containers found for this path." >&2
     fi
 }
-
 # --- URI Construction ---
 
 # Hex encode a string (required for VS Code remote URIs)
