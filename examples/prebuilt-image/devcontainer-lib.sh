@@ -27,20 +27,83 @@ check_docker_command() {
     fi
 }
 
+# --- Project Discovery ---
+
+# Get the root directory of the git repository for a given path
+# Usage: get_git_root_dir [path]
+get_git_root_dir() {
+    local project_dir="${1:-$(pwd -P)}"
+    if command -v git &> /dev/null; then
+        (cd "$project_dir" && git rev-parse --show-toplevel 2>/dev/null)
+    fi
+}
+
+# Get the directory that should be mounted from the host
+# If in a git repo, returns the git root. Otherwise, returns the project path.
+# Usage: get_host_mount_dir [path]
+get_host_mount_dir() {
+    local project_dir="${1:-$(pwd -P)}"
+    local git_root
+
+    git_root=$(get_git_root_dir "$project_dir")
+
+    if [ -n "$git_root" ]; then
+        echo "$git_root"
+    else
+        echo "$project_dir"
+    fi
+}
+
+# Calculate the remote path based on the project path and host mount directory
+# Logic: /<basename(host_mount_dir)>/<relative_path>
+# Example: project=/a/b/c/d/e, mount=/a/b/c -> /c/d/e
+# Usage: get_remote_dir <project_dir>
+get_remote_dir() {
+    local project_dir="$1"
+
+    # Ensure project_dir is absolute
+    project_dir=$(cd "$project_dir" && pwd -P)
+
+    local host_mount_dir
+    host_mount_dir=$(get_host_mount_dir "$project_dir")
+
+    # Get the folder name of the mount dir (e.g., 'c' from '/a/b/c')
+    local mount_name
+    mount_name=$(basename "$host_mount_dir")
+
+    # Get relative path (e.g., '/d/e')
+    # If project_dir == host_mount_dir, this will be empty
+    local rel_path="${project_dir#$host_mount_dir}"
+
+    echo "/${mount_name}${rel_path}"
+}
+
+# Ensure the project directory contains Dev Container settings
+# Exits the script if not found
+# Usage: check_project_dir_contains_devcontainer_settings [path]
+check_project_dir_contains_devcontainer_settings() {
+    local project_dir="${1:-$(pwd -P)}"
+    if [ ! -f "$project_dir/.devcontainer/devcontainer.json" ] && [ ! -f "$project_dir/.devcontainer.json" ]; then
+        echo "Error: No Dev Container configuration found in '$project_dir'." >&2
+        echo "Expected '.devcontainer/devcontainer.json' or '.devcontainer.json'." >&2
+        exit 1
+    fi
+}
+
 # --- Docker Management ---
 
 # Cleanup existing Dev Containers for a given project path
-# Usage: cleanup_dev_containers [project_path]
+# Usage: cleanup_dev_containers [project_dir]
 cleanup_dev_containers() {
-    local target_path="${1:-$(pwd)}"
+    local project_dir="${1:-$(pwd -P)}"
     check_docker_command
 
-    echo "Cleaning up existing Dev Containers for: $target_path" >&2
-    
+    echo "Cleaning up existing Dev Containers for: $project_dir" >&2
+
     # VS Code labels containers with 'devcontainer.local_folder'
     # This matches the folder that was "opened" (the one hex-encoded in the URI)
     local container_ids
-    container_ids=$(docker ps -aq --filter "label=devcontainer.local_folder=$target_path")
+    container_ids=$(docker ps -aq --filter "label=devcontainer.local_folder=$project_dir")
 
     if [ -n "$container_ids" ]; then
         echo "Found existing containers, removing: $container_ids" >&2
@@ -59,45 +122,19 @@ calculate_hex_path() {
 }
 
 # Generate the Dev Container URI for a given path
-# Usage: get_devcontainer_uri [project_path] [explicit_remote_path]
+# Usage: get_devcontainer_uri [project_dir] [explicit_remote_path]
 get_devcontainer_uri() {
-    local project_path="$1"
+    local project_dir="${1:-$(pwd -P)}"
     local explicit_remote_path="$2"
 
-
     local hex_host_path
-    hex_host_path=$(calculate_hex_path "$project_path")
+    hex_host_path=$(calculate_hex_path "$project_dir")
 
     local remote_path
     if [ -n "$explicit_remote_path" ]; then
         remote_path="$explicit_remote_path"
     else
-        # Check if git is available and we are inside a git repository
-        local git_root
-        if command -v git &> /dev/null && git_root=$(cd "$project_path" && git rev-parse --show-toplevel 2>/dev/null); then
-            local repo_name
-            repo_name=$(basename "$git_root")
-            
-            # Calculate absolute project path to ensure correct substitution
-            local abs_project_path
-            abs_project_path=$(cd "$project_path" && pwd)
-            
-            # Get relative path by removing git_root from abs_project_path
-            local rel_path="${abs_project_path#$git_root}"
-            # Remove leading slash from rel_path if present
-            rel_path="${rel_path#/}"
-
-            if [ -n "$rel_path" ]; then
-                remote_path="/workspaces/${repo_name}/${rel_path}"
-            else
-                remote_path="/workspaces/${repo_name}"
-            fi
-        else
-            # Fallback: Use the base name of the project_path
-            local base_name
-            base_name=$(basename "$project_path")
-            remote_path="/workspaces/${base_name}"
-        fi
+        remote_path="/workspaces$(get_remote_dir "$project_dir")"
     fi
 
     echo "vscode-remote://dev-container+${hex_host_path}${remote_path}"
@@ -106,7 +143,7 @@ get_devcontainer_uri() {
 # --- Launch ---
 
 # Launch VS Code in a Dev Container
-# Usage: open_in_devcontainer [project_path] [use_isolated_env: true|false] [install_ext: true|false] [explicit_remote_path]
+# Usage: open_in_devcontainer [project_dir] [use_isolated_env: true|false] [install_ext: true|false] [explicit_remote_path]
 #
 # install_ext:
 #   Whether to ensure the Dev Containers extension is installed before launching. (Default: true)
@@ -115,16 +152,16 @@ get_devcontainer_uri() {
 #   Optional. If provided, this exact path will be used as the path inside the container.
 #   If omitted, it is automatically calculated as: /workspaces/<repo_name>/<relative_path>
 open_in_devcontainer() {
-    local project_path="${1:-$(pwd)}"
+    local project_dir="${1:-$(pwd -P)}"
     local use_isolated_env="${2:-false}"
     local install_ext="${3:-true}"
     local explicit_remote_path="$4"
-    
+
     check_code_command
 
     local uri
-    uri=$(get_devcontainer_uri "$project_path" "$explicit_remote_path")
-    
+    uri=$(get_devcontainer_uri "$project_dir" "$explicit_remote_path")
+
     local env_args=()
 
     if [ "$use_isolated_env" = "true" ]; then
@@ -136,7 +173,7 @@ open_in_devcontainer() {
         mkdir -p "$user_data_dir" "$extensions_dir"
 
         env_args=("--user-data-dir" "$user_data_dir" "--extensions-dir" "$extensions_dir")
-        
+
         echo "Launching with temporary environment at: $temp_root" >&2
     fi
 

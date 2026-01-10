@@ -2,7 +2,7 @@
 set -e
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-source ./vscode-utils.sh
+source ./devcontainer-lib.sh
 
 cleanup_dev_containers
 
