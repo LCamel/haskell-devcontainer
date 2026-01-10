@@ -99,6 +99,10 @@ jobs:
 
           docker buildx imagetools create \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}:${IMAGE_TAG} \
+            --annotation "index:org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            --annotation "index:org.opencontainers.image.description=Ready-to-use Haskell environment with GHC, Stackage, and HLS" \
+            --annotation "index:org.opencontainers.image.licenses=MIT" \
+            --annotation "index:org.opencontainers.image.revision=${{ github.sha }}" \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}@${AMD64_DIGEST} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}@${ARM64_DIGEST}
   # Run smoke tests against the multi-arch image
@@ -161,6 +165,10 @@ jobs:
 
           docker buildx imagetools create \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG} \
+            --annotation "index:org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            --annotation "index:org.opencontainers.image.description=Ready-to-use Haskell environment with GHC, Stackage, and HLS" \
+            --annotation "index:org.opencontainers.image.licenses=MIT" \
+            --annotation "index:org.opencontainers.image.revision=${{ github.sha }}" \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_TEMP }}:${IMAGE_TAG}
 
           echo "Successfully promoted to ${IMAGE_TAG}"
@@ -216,6 +224,10 @@ jobs:
             
             echo "Applying updates..."
             docker buildx imagetools create $TAG_ARGS \
+              --annotation "index:org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+              --annotation "index:org.opencontainers.image.description=Ready-to-use Haskell environment with GHC, Stackage, and HLS" \
+              --annotation "index:org.opencontainers.image.licenses=MIT" \
+              --annotation "index:org.opencontainers.image.revision=${{ github.sha }}" \
               ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TARGET_TAG
           else
             echo "No floating tags to update."
