@@ -4,4 +4,6 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 source ./devcontainer-lib.sh
 
-open_in_devcontainer "$(pwd)"
+cleanup_dev_containers
+
+open_in_devcontainer "$(pwd)" "true"
