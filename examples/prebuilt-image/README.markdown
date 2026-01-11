@@ -13,4 +13,4 @@ Dev Container Tutorials
 
 Other Haskell Dev Containers
 - https://docs.haskellstack.org/en/stable/dev_containers/
-- https://github.com/vzarytovskii/haskell-dev-env?tab=readme-ov-file
+- https://github.com/vzarytovskii/haskell-dev-env
