@@ -136,6 +136,7 @@ EOF
     # Create input file with all LSP messages
     local INPUT_FILE="$LSP_TEST_DIR/lsp-input.txt"
     local OUTPUT_FILE="$LSP_TEST_DIR/lsp-output.txt"
+    local STDERR_FILE="$LSP_TEST_DIR/hls-stderr.log"
 
     # Initialize request
     local INITIALIZE_REQUEST='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"clientInfo":{"name":"smoke-test","version":"1.0.0"},"rootUri":"file://'"$LSP_TEST_DIR"'","capabilities":{"textDocument":{"hover":{"contentFormat":["plaintext"]}}},"initializationOptions":{}}}'
@@ -173,10 +174,13 @@ EOF
         create_lsp_message "$EXIT_NOTIFICATION"
     } > "$INPUT_FILE"
 
-    # Start HLS and capture stderr
+    # Start HLS and capture stderr to a file first
     echo "Starting HLS..."
     echo "--- HLS stderr output: ---"
-    timeout 30 haskell-language-server-wrapper --lsp < "$INPUT_FILE" > "$OUTPUT_FILE" 2> >(tee /tmp/hls-stderr.log >&2) || HLS_EXIT=$?
+    timeout 30 haskell-language-server-wrapper --lsp < "$INPUT_FILE" > "$OUTPUT_FILE" 2> "$STDERR_FILE" || HLS_EXIT=$?
+
+    # Display stderr after HLS completes
+    cat "$STDERR_FILE" >&2
     echo "--- End of HLS stderr ---"
     echo ""
 
@@ -199,8 +203,13 @@ EOF
     grep -o '{.*}' "$OUTPUT_FILE" > "$EXTRACTED_JSON" || {
         echo "Error: No JSON messages found in output"
         echo ""
+        echo "HLS stderr output:"
+        cat "$STDERR_FILE"
+        echo ""
         echo "HLS stdout output (first 500 chars):"
         head -c 500 "$OUTPUT_FILE"
+        echo ""
+        echo "Full stdout file size: $(wc -c < "$OUTPUT_FILE") bytes"
         return 1
     }
 
