@@ -19,6 +19,9 @@ Develop and test in an isolated environment without worrying about conflicts bet
 
 Please refer to [here](./examples/prebuilt-image).
 
+[![prebuilt-image](https://github.com/user-attachments/assets/d5616738-8e4e-4727-a611-19fca074ae7c)](https://www.youtube.com/watch?v=wcENSCsc3Rg)
+
+
 ### Advanced: VS Code + local-built image
 
 Prefer to build your own image? Just review a few simple files and you can build it yourself.
