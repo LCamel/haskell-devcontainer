@@ -173,20 +173,19 @@ EOF
         create_lsp_message "$EXIT_NOTIFICATION"
     } > "$INPUT_FILE"
 
-    # Start HLS
+    # Start HLS and capture stderr
     echo "Starting HLS..."
-    timeout 30 haskell-language-server-wrapper --lsp < "$INPUT_FILE" > "$OUTPUT_FILE" 2>/tmp/hls-stderr.log || HLS_EXIT=$?
+    echo "--- HLS stderr output: ---"
+    timeout 30 haskell-language-server-wrapper --lsp < "$INPUT_FILE" > "$OUTPUT_FILE" 2> >(tee /tmp/hls-stderr.log >&2) || HLS_EXIT=$?
+    echo "--- End of HLS stderr ---"
+    echo ""
 
     # Check exit code (0 = success, 124 = timeout, other = error)
     if [ "${HLS_EXIT:-0}" -eq 124 ]; then
         echo "Error: HLS timed out"
-        echo "HLS stderr output:"
-        cat /tmp/hls-stderr.log
         return 1
     elif [ "${HLS_EXIT:-0}" -ne 0 ] && [ "${HLS_EXIT:-0}" -ne 1 ]; then
         echo "Error: HLS exited with code ${HLS_EXIT}"
-        echo "HLS stderr output:"
-        cat /tmp/hls-stderr.log
         return 1
     fi
 
@@ -199,8 +198,6 @@ EOF
     local EXTRACTED_JSON="$LSP_TEST_DIR/messages.json"
     grep -o '{.*}' "$OUTPUT_FILE" > "$EXTRACTED_JSON" || {
         echo "Error: No JSON messages found in output"
-        echo "HLS stderr output:"
-        cat /tmp/hls-stderr.log
         echo ""
         echo "HLS stdout output (first 500 chars):"
         head -c 500 "$OUTPUT_FILE"
