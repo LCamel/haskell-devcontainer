@@ -135,8 +135,11 @@ jobs:
 
           docker pull "${FULL_IMAGE_NAME}"
 
+          # GITHUB_TOKEN: "stack new" uses GitHub API to fetch templates, may hit rate limits without auth
+          # See: https://github.com/commercialhaskell/stack/issues/6034
           docker run --rm \
             --platform ${{ matrix.platform }} \
+            -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
             -v ${{ github.workspace }}/.github/scripts/smoke-test.sh:/tmp/smoke-test.sh \
             -v ${{ github.workspace }}/docker/haskell-versions.env:/tmp/haskell-versions.env \
             -w /tmp \
