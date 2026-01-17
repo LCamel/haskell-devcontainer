@@ -29,4 +29,5 @@ fi
 # Create tag
 git tag "$TAG_NAME"
 echo "Tag '${TAG_NAME}' created successfully."
-echo "To push the tag, run: git push origin ${TAG_NAME}"
+echo "To push the tag, run:"
+echo "  git push origin ${TAG_NAME}"
