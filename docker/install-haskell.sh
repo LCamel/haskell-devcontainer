@@ -32,4 +32,5 @@ time ghcup install cabal $CABAL_VERSION
 cabal --version
 
 # for later retrieval in the container
-echo "$STACKAGE_VERSION" > ~/stackage-version
+mkdir -p ~/.haskell-devcontainer
+echo "$STACKAGE_VERSION" > ~/.haskell-devcontainer/stackage-version

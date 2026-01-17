@@ -34,7 +34,7 @@ Please refer to [here](./examples/local-built-image).
 `amd64` and `arm64`.
 
 
-## Tags
+## Image Tags
 
 - Floating tags
   - `latest`: Latest recommended version.
@@ -43,4 +43,13 @@ Please refer to [here](./examples/local-built-image).
 - Fixed tags
   - `{GHC}__{STACKAGE}__{HLS}__{TIMESTAMP}`: Fixed version, never deleted, e.g. `9.10.2__lts-24.11__2.11.0.0__20251229-1435`
 
-For a detailed list, see [here](https://github.com/LCamel/haskell-devcontainer/pkgs/container/haskell-devcontainer).
+For a detailed image list, see [here](https://github.com/LCamel/haskell-devcontainer/pkgs/container/haskell-devcontainer).
+
+
+## Version Info
+
+Inside the container, you can find the Stackage version at:
+
+```
+~/.haskell-devcontainer/stackage-version
+```

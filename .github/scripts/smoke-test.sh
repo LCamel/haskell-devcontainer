@@ -37,8 +37,8 @@ test_ghc_version() {
 
 # Test: Check stackage-version file
 test_stackage_version_file() {
-    echo "=== Checking ~/stackage-version file ==="
-    STACKAGE_VERSION_FILE="$HOME/stackage-version"
+    echo "=== Checking ~/.haskell-devcontainer/stackage-version file ==="
+    STACKAGE_VERSION_FILE="$HOME/.haskell-devcontainer/stackage-version"
     if [ ! -f "$STACKAGE_VERSION_FILE" ]; then
         echo "Error: $STACKAGE_VERSION_FILE not found."
         return 1
@@ -60,7 +60,7 @@ test_stack_project() {
     cd "$TEST_DIR"
 
     echo "Creating new stack project..."
-    stack new foo --bare --resolver "$(cat ~/stackage-version)"
+    stack new foo --bare --resolver "$(cat ~/.haskell-devcontainer/stackage-version)"
 
     echo "Installing project..."
     stack install
