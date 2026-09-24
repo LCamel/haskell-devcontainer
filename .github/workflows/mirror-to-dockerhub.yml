@@ -1,0 +1,125 @@
+# Copy released images from GHCR to Docker Hub.
+#
+# GHCR is the primary registry and is published automatically by build-and-push.yml.
+# Docker Hub is a mirror that is filled by running this workflow by hand, so remember
+# to run it after a release (see .github/README-build.md).
+name: Mirror to Docker Hub
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: 'Which tags to copy'
+        type: choice
+        required: true
+        default: current-releases
+        options:
+          - current-releases  # the newest build of every GHC line, with all of their tags
+          - latest-release    # one image: whatever "latest" points at, with all of its tags
+          - all-tags          # everything in the GHCR repository
+          - custom            # the tags listed below
+      tags:
+        description: 'Only for scope=custom: space separated tag list'
+        required: false
+        default: ''
+      dry_run:
+        description: 'Only list what would be copied'
+        type: boolean
+        required: false
+        default: false
+
+# Share the lock with the tag-floating job in build-and-push.yml. The two never write to
+# the same registry, but a release rewrites GHCR's floating tags while this workflow is
+# reading them, and a half-updated read would mirror an inconsistent set to Docker Hub.
+concurrency:
+  group: update-floating-tags-lock
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: lcamel/haskell-devcontainer
+  DOCKERHUB_REGISTRY: docker.io
+  DOCKERHUB_IMAGE_NAME: lcamel/haskell-devcontainer
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4  # Need script from repo
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKERHUB_REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Select tags to mirror
+        id: select
+        env:
+          SCOPE: ${{ inputs.scope }}
+          CUSTOM_TAGS: ${{ inputs.tags }}
+        run: |
+          # Custom tags are free-form input: reject anything that is not a valid
+          # Docker tag before it is ever word-split into a command.
+          for tag in $CUSTOM_TAGS; do
+            if ! echo "$tag" | grep -qE '^[A-Za-z0-9_][A-Za-z0-9._-]{0,127}$'; then
+              echo "❌ ERROR: not a valid Docker tag: '$tag'" >&2
+              exit 1
+            fi
+          done
+
+          TAGS=$(./.github/scripts/select-mirror-tags.sh \
+            "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" "$SCOPE" $CUSTOM_TAGS)
+
+          echo "Tags to mirror:"
+          echo "$TAGS"
+
+          {
+            echo "tags<<MIRROR_TAGS_EOF"
+            echo "$TAGS"
+            echo "MIRROR_TAGS_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Copy images to Docker Hub
+        env:
+          TAGS: ${{ steps.select.outputs.tags }}
+        run: |
+          SRC="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          DST="${{ env.DOCKERHUB_REGISTRY }}/${{ env.DOCKERHUB_IMAGE_NAME }}"
+
+          if [ -z "$TAGS" ]; then
+            echo "Nothing to mirror."
+            exit 0
+          fi
+
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "### Dry run - would copy to \`$DST\`" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Mirrored to \`$DST\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          for tag in $TAGS; do
+            if [ "${{ inputs.dry_run }}" = "true" ]; then
+              echo "Would copy: $SRC:$tag -> $DST:$tag"
+            else
+              echo "::group::$tag"
+              # crane copy preserves the manifest digest, so the same image on both
+              # registries keeps the same digest (imagetools create would rewrite it).
+              docker run --rm \
+                -v $HOME/.docker:/root/.docker \
+                gcr.io/go-containerregistry/crane:latest \
+                copy "$SRC:$tag" "$DST:$tag"
+              echo "::endgroup::"
+            fi
+            echo "- \`$tag\`" >> "$GITHUB_STEP_SUMMARY"
+          done

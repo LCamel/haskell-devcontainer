@@ -34,6 +34,22 @@ Please refer to [here](./examples/local-built-image).
 `amd64` and `arm64`.
 
 
+## Registries
+
+The same images are available from two registries, under the same tags:
+
+- GHCR: `ghcr.io/lcamel/haskell-devcontainer`
+- Docker Hub: `lcamel/haskell-devcontainer`
+
+```sh
+docker pull ghcr.io/lcamel/haskell-devcontainer:latest
+# or
+docker pull lcamel/haskell-devcontainer:latest
+```
+
+GHCR is the primary registry; Docker Hub is a mirror and may lag shortly behind a fresh release.
+
+
 ## Image Tags
 
 - Floating tags
@@ -43,7 +59,7 @@ Please refer to [here](./examples/local-built-image).
 - Fixed tags
   - `{GHC}__{STACKAGE}__{HLS}__{TIMESTAMP}`: Fixed version, never deleted, e.g. `9.10.2__lts-24.11__2.11.0.0__20251229-1435`
 
-For a detailed image list, see [here](https://github.com/LCamel/haskell-devcontainer/pkgs/container/haskell-devcontainer).
+For a detailed image list, see [GHCR](https://github.com/LCamel/haskell-devcontainer/pkgs/container/haskell-devcontainer) or [Docker Hub](https://hub.docker.com/r/lcamel/haskell-devcontainer/tags).
 
 
 ## Version Info
