@@ -50,6 +50,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4  # Need script from repo
 
+      # Run crane as the runner user rather than through its container image: the image
+      # runs as uid 65532 with HOME=/home/nonroot, so it cannot read the 0600 config.json
+      # that docker/login-action writes, and would push anonymously.
+      - name: Install crane
+        env:
+          CRANE_VERSION: v0.22.1
+          CRANE_SHA256: 0ab7a1d6932a213aed964ce97666c3077fe691c8606413674a8b3e0b9ec4cda0
+        run: |
+          curl -fsSL -o /tmp/crane.tar.gz \
+            "https://github.com/google/go-containerregistry/releases/download/${CRANE_VERSION}/go-containerregistry_Linux_x86_64.tar.gz"
+          echo "${CRANE_SHA256}  /tmp/crane.tar.gz" | sha256sum -c -
+          sudo tar -xzf /tmp/crane.tar.gz -C /usr/local/bin crane
+          crane version
+
       - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -66,6 +80,7 @@ jobs:
       - name: Select tags to mirror
         id: select
         env:
+          CRANE: crane
           SCOPE: ${{ inputs.scope }}
           CUSTOM_TAGS: ${{ inputs.tags }}
         run: |
@@ -115,10 +130,7 @@ jobs:
               echo "::group::$tag"
               # crane copy preserves the manifest digest, so the same image on both
               # registries keeps the same digest (imagetools create would rewrite it).
-              docker run --rm \
-                -v $HOME/.docker:/root/.docker \
-                gcr.io/go-containerregistry/crane:latest \
-                copy "$SRC:$tag" "$DST:$tag"
+              crane copy "$SRC:$tag" "$DST:$tag"
               echo "::endgroup::"
             fi
             echo "- \`$tag\`" >> "$GITHUB_STEP_SUMMARY"

@@ -10,7 +10,12 @@ set -eo pipefail
 #   all-tags          every tag in the repository
 #   custom            the tags given as extra arguments
 #
-# crane is invoked through $CRANE, so this runs both in CI and on a local machine.
+# crane is invoked through $CRANE. CI sets it to the native binary. The fallback runs the
+# container image with no credentials, which is enough because this script only reads tags
+# and digests from a public repository. Set CRANE to a native crane if you need auth: the
+# container image runs as a non-root user whose HOME is not /root, so mounting a config
+# into /root/.docker is silently ignored, and mounting one that uses a credential helper
+# fails outright because the helper binary is not in the image.
 
 IMAGE="$1"
 SCOPE="$2"
@@ -22,7 +27,7 @@ if [ -z "$IMAGE" ] || [ -z "$SCOPE" ]; then
     exit 1
 fi
 
-CRANE="${CRANE:-docker run --rm -v $HOME/.docker:/root/.docker gcr.io/go-containerregistry/crane:latest}"
+CRANE="${CRANE:-docker run --rm gcr.io/go-containerregistry/crane:latest}"
 
 # Floating tags as documented in README.md: latest, ghc-m.n.p, stackage-lts-m.n
 FLOATING_PATTERN='^(latest|ghc-[0-9]+\.[0-9]+\.[0-9]+|stackage-lts-[0-9]+\.[0-9]+)$'
